@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RVU Wi-Fi Auto Login</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <!-- Header -->
+    <header class="popup-header">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12.55a11 11 0 0 1 14.08 0"></path>
+            <path d="M1.42 9a16 16 0 0 1 21.16 0"></path>
+            <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+            <line x1="12" y1="20" x2="12.01" y2="20"></line>
+          </svg>
+        </div>
+        <div class="brand-info">
+          <h1 class="brand-title">RVU Auto Login</h1>
+          <span class="brand-subtitle">Captive Portal Authenticator</span>
+        </div>
+      </div>
+      <div id="statusChip" class="status-chip chip-unset">
+        <span class="chip-dot"></span>
+        <span id="statusChipText" class="chip-text">Setup</span>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="popup-main">
+      <form id="credentialsForm" class="credentials-form" autocomplete="on">
+        <!-- USN / Username -->
+        <div class="form-group">
+          <label for="usnInput" class="form-label">
+            <span>University Roll No / USN</span>
+          </label>
+          <div class="input-wrapper">
+            <input 
+              type="text" 
+              id="usnInput" 
+              name="username" 
+              class="form-input" 
+              placeholder="e.g. RVU23CSE001" 
+              spellcheck="false" 
+              autocomplete="username" 
+              required
+            />
+          </div>
+        </div>
+
+        <!-- Password -->
+        <div class="form-group">
+          <label for="passwordInput" class="form-label">
+            <span>Wi-Fi Password</span>
+          </label>
+          <div class="input-wrapper">
+            <input 
+              type="password" 
+              id="passwordInput" 
+              name="password" 
+              class="form-input" 
+              placeholder="Enter portal password" 
+              autocomplete="current-password" 
+              required
+            />
+            <button 
+              type="button" 
+              id="togglePasswordBtn" 
+              class="icon-btn-inline" 
+              aria-label="Toggle password visibility"
+              title="Show / hide password"
+            >
+              <!-- Eye Icon -->
+              <svg id="eyeIcon" class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+              <!-- Eye Off Icon (hidden by default) -->
+              <svg id="eyeOffIcon" class="icon hidden" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                <line x1="1" y1="1" x2="23" y2="23"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit" id="saveBtn" class="btn-primary">
+          <span id="saveBtnText">Save Credentials</span>
+        </button>
+      </form>
+
+      <!-- Preferences Section -->
+      <section class="preferences-section" aria-label="Preferences">
+        <h2 class="section-title">Automation Settings</h2>
+
+        <!-- Toggle: Auto-login enabled -->
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <span class="toggle-label" id="autoLoginLabel">Auto-login on portal open</span>
+            <span class="toggle-desc">Automatically fill and sign in</span>
+          </div>
+          <label class="switch" aria-labelledby="autoLoginLabel">
+            <input type="checkbox" id="autoLoginToggle" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <!-- Toggle: Auto-close tab -->
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <span class="toggle-label" id="autoCloseLabel">Auto-close tab after login</span>
+            <span class="toggle-desc">Keep off if network requires keep-alive</span>
+          </div>
+          <label class="switch" aria-labelledby="autoCloseLabel">
+            <input type="checkbox" id="autoCloseToggle">
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <!-- Toggle: Show status badge -->
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <span class="toggle-label" id="badgeLabel">On-page status badge</span>
+            <span class="toggle-desc">Show floating indicator on portal page</span>
+          </div>
+          <label class="switch" aria-labelledby="badgeLabel">
+            <input type="checkbox" id="showBadgeToggle" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+      </section>
+
+      <!-- Quick Actions -->
+      <section class="quick-actions" aria-label="Quick Actions">
+        <button type="button" id="openPortalBtn" class="btn-secondary">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+            <polyline points="15 3 21 3 21 9"></polyline>
+            <line x1="10" y1="14" x2="21" y2="3"></line>
+          </svg>
+          <span>Test / Open Portal Page</span>
+        </button>
+
+        <button type="button" id="clearCredsBtn" class="btn-ghost-danger">
+          Clear Credentials
+        </button>
+      </section>
+
+      <!-- Notification Toast -->
+      <div id="toast" class="toast hidden" role="alert" aria-live="polite">
+        <span id="toastMsg">Credentials saved</span>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="popup-footer">
+      <span>Targets: <code class="target-url">10.16.0.1:8090</code></span>
+      <span class="version">v1.0.0</span>
+    </footer>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

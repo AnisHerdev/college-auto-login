@@ -1,0 +1,19 @@
+{
+  "name": "rvu-wifi-auto-login",
+  "version": "1.0.0",
+  "description": "Chrome extension to auto-fill USN & password and log in to the RVU campus captive portal.",
+  "type": "module",
+  "scripts": {
+    "generate-icons": "node scripts/generate-icons.mjs",
+    "test-server": "node scripts/test-server.mjs"
+  },
+  "keywords": [
+    "chrome-extension",
+    "captive-portal",
+    "auto-login",
+    "rvu",
+    "manifest-v3"
+  ],
+  "author": "",
+  "license": "MIT"
+}

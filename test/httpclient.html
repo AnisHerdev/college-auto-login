@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign in to access this network (Simulation)</title>
+  <style>
+    body { font-family: sans-serif; color: #5c5c5c; margin: 4em auto; max-width: 360px; text-align: center; background: #fafafa; }
+    .panel { background: #fff; border: 1px solid #d7dbdd; border-radius: 6px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+    .panel-heading { background-color: #1E3338; padding: 1.5em; color: white; font-weight: bold; font-size: 1.1em; }
+    .panel-body { padding: 1.8em; }
+    h1 { font-size: 1.1em; color: #D7AB60; margin-bottom: 1.2em; font-weight: 500; }
+    input[type=text], input[type=password] {
+      border: #d7dbdd solid 1px; border-radius: .4em; width: 100%; box-sizing: border-box; padding: 10px 12px; margin: 8px 0; font-size: 14px;
+    }
+    .button {
+      background-color: #44ac33; color: #fff; padding: 10px 14px; border-radius: 4px; font-weight: bold; cursor: pointer; margin-top: 10px; display: inline-block; width: 100%; box-sizing: border-box;
+    }
+    .button:hover { background-color: #55bd42; }
+    #statusmessage { font-size: 0.85em; color: #e76644; margin-top: 10px; min-height: 1.5em; }
+    .unshown { display: none; }
+    #loggedin-view { display: none; padding: 1em 0; }
+    .loggedout { display: block; }
+    #credentials.loggedin { display: none; }
+    .success-icon { font-size: 40px; color: #44ac33; margin-bottom: 8px; }
+  </style>
+</head>
+<body>
+  <div class="panel">
+    <div class="panel-heading">RVU Campus Wi-Fi Portal (Test Environment)</div>
+    <div class="panel-body">
+      <h1 id="signin-caption">Sign in to access this network</h1>
+
+      <div id="credential-login-div">
+        <div id="authentication">
+          <div id="credentials" class="loggedout">
+            <input name="username" type="text" id="username" placeholder="Username (USN)">
+            <input name="password" type="password" id="password" placeholder="Password">
+          </div>
+
+          <div id="loggedin-message" class="loggedout">
+            <div id="loggedin-view">
+              <div class="success-icon">✓</div>
+              <p style="color: #2e7d32; font-weight: bold;">You are signed in successfully!</p>
+              <p style="font-size: 12px; color: #888;" id="donotclosepage">Do not close this page. If you do, you will be signed out.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="buttonrow">
+          <a href="javascript:submitRequest()">
+            <div id="loginbutton" class="button">Sign in</div>
+          </a>
+        </div>
+      </div>
+
+      <div class="statusmessagerow">
+        <div id="statusmessage" class="unshown"></div>
+      </div>
+    </div>
+  </div>
+
+  <p style="margin-top: 20px; font-size: 12px; color: #888;">
+    This is an offline test simulator mimicking the Sophos Cyberoam captive portal structure.
+  </p>
+
+  <script>
+    function submitRequest() {
+      const u = document.getElementById('username').value.trim();
+      const p = document.getElementById('password').value.trim();
+      const status = document.getElementById('statusmessage');
+
+      if (!u || !p) {
+        status.textContent = 'Please enter your username and password.';
+        status.classList.remove('unshown');
+        return;
+      }
+
+      status.textContent = 'Signing you in...';
+      status.classList.remove('unshown');
+
+      setTimeout(() => {
+        status.classList.add('unshown');
+        document.getElementById('credentials').classList.add('loggedin');
+        document.getElementById('loggedin-view').style.display = 'block';
+        document.getElementById('loginbutton').style.display = 'none';
+        document.getElementById('signin-caption').textContent = 'Session Active';
+      }, 600);
+    }
+  </script>
+</body>
+</html>
