@@ -207,6 +207,15 @@
 
   // Wait for captive portal DOM elements to be ready
   function init() {
+    // Only activate if we are on the captive portal page or simulator
+    const isPortalPath = window.location.pathname.toLowerCase().includes('httpclient');
+    const isPortalHost = window.location.hostname === '10.16.0.1';
+    const hasPortalMarkup = Boolean(document.getElementById('credential-login-div') || document.getElementById('panelheading'));
+
+    if (!isPortalPath && !isPortalHost && !hasPortalMarkup) {
+      return;
+    }
+
     if (isAlreadyLoggedIn()) {
       handleLoginSuccess();
       return;
