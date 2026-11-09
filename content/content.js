@@ -138,22 +138,71 @@
     hasAttemptedLogin = true;
     updateBadge(`Signing in as ${usn}...`, 'pending');
 
-    // Fill fields and dispatch events for validation scripts
+    // Fill fields with focus, input, change, and blur events
+    usernameInput.focus();
     usernameInput.value = usn;
     usernameInput.dispatchEvent(new Event('input', { bubbles: true }));
     usernameInput.dispatchEvent(new Event('change', { bubbles: true }));
+    usernameInput.blur();
 
+    passwordInput.focus();
     passwordInput.value = password;
     passwordInput.dispatchEvent(new Event('input', { bubbles: true }));
     passwordInput.dispatchEvent(new Event('change', { bubbles: true }));
+    passwordInput.blur();
 
-    // Small delay to allow any inline validators to execute cleanly
-    await new Promise((resolve) => setTimeout(resolve, 200));
+    // Small delay to allow any inline validators to process values
+    await new Promise((resolve) => setTimeout(resolve, 250));
 
-    // Trigger sign in
-    if (loginButton) {
-      loginButton.click();
+    // Multi-prong execution to guarantee sign-in across any portal security configuration:
+    const anchor = loginButton.closest('a') || document.querySelector('a[href*="submitRequest"]');
+
+    // 1. Dispatch custom event to MAIN world page bridge (calls window.submitRequest in page context)
+    window.dispatchEvent(new CustomEvent('__RVU_AUTO_LOGIN_SUBMIT__'));
+
+    // 2. Inline script injection fallback (calls submitRequest directly in page context)
+    try {
+      const script = document.createElement('script');
+      script.textContent = `
+        if (typeof window.submitRequest === 'function') {
+          window.submitRequest();
+        } else {
+          var a = document.querySelector('a[href*="submitRequest"]') || document.getElementById('loginbutton')?.closest('a');
+          if (a) a.click();
+        }
+      `;
+      (document.head || document.documentElement).appendChild(script);
+      script.remove();
+    } catch (e) {
+      console.warn('Script injection fallback:', e);
     }
+
+    // 3. Dispatch Enter key event on password input
+    const enterOpts = { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true, cancelable: true };
+    passwordInput.dispatchEvent(new KeyboardEvent('keydown', enterOpts));
+    passwordInput.dispatchEvent(new KeyboardEvent('keypress', enterOpts));
+    passwordInput.dispatchEvent(new KeyboardEvent('keyup', enterOpts));
+
+    // 4. Click the parent anchor link and button div
+    if (anchor) {
+      anchor.click();
+      anchor.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+    }
+    loginButton.click();
+    loginButton.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+
+    // 5. Safety re-trigger: if portal remains idle after 1.2s without error or login, try once more
+    setTimeout(() => {
+      if (!isAlreadyLoggedIn() && !getErrorMessage()) {
+        const spinner = document.getElementById('spinner-view');
+        const isSpinning = spinner && window.getComputedStyle(spinner).display !== 'none';
+        if (!isSpinning) {
+          console.log('[RVU Auto-Login] Portal still idle, re-triggering submit...');
+          window.dispatchEvent(new CustomEvent('__RVU_AUTO_LOGIN_SUBMIT__'));
+          if (anchor) anchor.click();
+        }
+      }
+    }, 1200);
   }
 
   // Watch for state changes after submit

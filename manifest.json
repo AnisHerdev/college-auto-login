@@ -38,6 +38,16 @@
         "*://localhost/*",
         "*://127.0.0.1/*"
       ],
+      "js": ["content/page-bridge.js"],
+      "world": "MAIN",
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "*://10.16.0.1/*",
+        "*://localhost/*",
+        "*://127.0.0.1/*"
+      ],
       "js": ["content/content.js"],
       "css": ["content/content.css"],
       "run_at": "document_end"
