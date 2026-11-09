@@ -69,6 +69,8 @@
       const u = document.getElementById('username').value.trim();
       const p = document.getElementById('password').value.trim();
       const status = document.getElementById('statusmessage');
+      const urlParams = new URLSearchParams(window.location.search);
+      const sim = urlParams.get('simulate');
 
       if (!u || !p) {
         status.textContent = 'Please enter your username and password.';
@@ -78,6 +80,19 @@
 
       status.textContent = 'Signing you in...';
       status.classList.remove('unshown');
+
+      if (sim === 'timeout' || p.toLowerCase() === 'timeout') {
+        // Intentionally simulate unresponsive gateway to test watchdog timeout
+        return;
+      }
+
+      if (sim === 'error' || p.toLowerCase() === 'wrong' || p.toLowerCase() === 'invalid') {
+        setTimeout(() => {
+          status.textContent = 'The system could not log you on. Make sure your credentials are correct.';
+          status.classList.remove('unshown');
+        }, 600);
+        return;
+      }
 
       setTimeout(() => {
         status.classList.add('unshown');

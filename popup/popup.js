@@ -21,6 +21,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   const toast = document.getElementById('toast');
   const toastMsg = document.getElementById('toastMsg');
 
+  // Error Alert Elements
+  const errorAlert = document.getElementById('errorAlert');
+  const errorAlertMessage = document.getElementById('errorAlertMessage');
+  const errorAlertTime = document.getElementById('errorAlertTime');
+  const dismissErrorBtn = document.getElementById('dismissErrorBtn');
+
   let toastTimeout = null;
 
   function showToast(message, isError = false) {
@@ -35,28 +41,53 @@ document.addEventListener('DOMContentLoaded', async () => {
     }, 2400);
   }
 
-  function updateStatusIndicator(hasCreds, isEnabled) {
-    statusChip.classList.remove('chip-active', 'chip-unset', 'chip-paused');
+  function formatRelativeTime(timestamp) {
+    if (!timestamp) return 'Recently';
+    const elapsedSec = Math.floor((Date.now() - timestamp) / 1000);
+    if (elapsedSec < 30) return 'Just now';
+    if (elapsedSec < 60) return `${elapsedSec}s ago`;
+    const elapsedMin = Math.floor(elapsedSec / 60);
+    if (elapsedMin < 60) return `${elapsedMin}m ago`;
+    const elapsedHours = Math.floor(elapsedMin / 60);
+    return `${elapsedHours}h ago`;
+  }
+
+  function renderErrorAlert(lastError) {
+    if (lastError && lastError.message) {
+      errorAlertMessage.textContent = lastError.message;
+      errorAlertTime.textContent = formatRelativeTime(lastError.timestamp);
+      errorAlert.classList.remove('hidden');
+    } else {
+      errorAlert.classList.add('hidden');
+    }
+  }
+
+  function updateStatusIndicator(hasCreds, isEnabled, hasError = false) {
+    statusChip.classList.remove('chip-active', 'chip-unset', 'chip-paused', 'chip-error');
     if (!hasCreds) {
       statusChip.classList.add('chip-unset');
       statusChipText.textContent = 'Setup';
     } else if (!isEnabled) {
       statusChip.classList.add('chip-paused');
       statusChipText.textContent = 'Paused';
+    } else if (hasError) {
+      statusChip.classList.add('chip-error');
+      statusChipText.textContent = 'Failed';
     } else {
       statusChip.classList.add('chip-active');
       statusChipText.textContent = 'Active';
     }
   }
 
-  // Load existing configuration
+  // Load existing configuration and error state
   const stored = await chrome.storage.local.get([
     'usn',
     'password',
     'autoLoginEnabled',
     'autoCloseTab',
     'showStatusBadge',
-    'portalUrl'
+    'portalUrl',
+    'lastLoginError'
   ]);
 
   if (stored.usn) usnInput.value = stored.usn;
@@ -68,7 +99,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   showBadgeToggle.checked = stored.showStatusBadge !== false;
 
   const hasCreds = Boolean(stored.usn && stored.password);
-  updateStatusIndicator(hasCreds, autoLoginEnabled);
+  const currentError = stored.lastLoginError;
+  renderErrorAlert(currentError);
+  updateStatusIndicator(hasCreds, autoLoginEnabled, Boolean(currentError && currentError.message));
+
+  // Dismiss Error Alert
+  dismissErrorBtn.addEventListener('click', async () => {
+    errorAlert.classList.add('hidden');
+    await chrome.storage.local.remove('lastLoginError');
+    chrome.runtime.sendMessage({ action: 'CLEAR_ERROR' });
+    const currentCreds = Boolean(usnInput.value.trim() && passwordInput.value);
+    updateStatusIndicator(currentCreds, autoLoginToggle.checked, false);
+  });
 
   // Toggle Password Visibility
   togglePasswordBtn.addEventListener('click', () => {
@@ -91,6 +133,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     await chrome.storage.local.set({ usn, password });
+    await chrome.storage.local.remove('lastLoginError');
+    errorAlert.classList.add('hidden');
 
     // Tactile button feedback
     const originalText = saveBtnText.textContent;
@@ -103,9 +147,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     }, 1400);
 
     showToast('Credentials saved successfully');
-    updateStatusIndicator(true, autoLoginToggle.checked);
+    updateStatusIndicator(true, autoLoginToggle.checked, false);
 
-    chrome.runtime.sendMessage({ action: 'UPDATE_BADGE' });
+    chrome.runtime.sendMessage({ action: 'CLEAR_ERROR' });
   });
 
   // Automation Settings Listeners
@@ -113,7 +157,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const enabled = autoLoginToggle.checked;
     await chrome.storage.local.set({ autoLoginEnabled: enabled });
     const hasCreds = Boolean(usnInput.value.trim() && passwordInput.value);
-    updateStatusIndicator(hasCreds, enabled);
+    const hasError = !errorAlert.classList.contains('hidden');
+    updateStatusIndicator(hasCreds, enabled, hasError);
     chrome.runtime.sendMessage({ action: 'UPDATE_BADGE' });
     showToast(enabled ? 'Auto-login enabled' : 'Auto-login paused');
   });
@@ -143,11 +188,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     if (confirm('Are you sure you want to remove your saved credentials?')) {
-      await chrome.storage.local.remove(['usn', 'password']);
+      await chrome.storage.local.remove(['usn', 'password', 'lastLoginError']);
+      errorAlert.classList.add('hidden');
       usnInput.value = '';
       passwordInput.value = '';
-      updateStatusIndicator(false, autoLoginToggle.checked);
-      chrome.runtime.sendMessage({ action: 'UPDATE_BADGE' });
+      updateStatusIndicator(false, autoLoginToggle.checked, false);
+      chrome.runtime.sendMessage({ action: 'CLEAR_ERROR' });
       showToast('Credentials removed');
     }
   });

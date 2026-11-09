@@ -144,6 +144,109 @@ body {
   background-color: var(--ink-muted);
 }
 
+.chip-error {
+  border-color: oklch(0.42 0.14 25);
+  color: var(--status-crimson);
+}
+.chip-error .chip-dot {
+  background-color: var(--status-crimson);
+  box-shadow: 0 0 6px var(--status-crimson);
+}
+
+/* Error Alert Banner */
+.error-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  background-color: oklch(0.18 0.04 25 / 0.65);
+  border: 1px solid oklch(0.38 0.12 25);
+  border-radius: var(--radius-md);
+  color: var(--ink-primary);
+  position: relative;
+  animation: rvu-fade-in 0.2s ease-out;
+}
+
+.error-alert.hidden {
+  display: none !important;
+}
+
+.error-alert-icon {
+  color: var(--status-crimson);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.error-alert-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.error-alert-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.error-alert-title {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--status-crimson);
+  letter-spacing: -0.01em;
+}
+
+.error-alert-time {
+  font-size: 10px;
+  color: var(--ink-muted);
+}
+
+.error-alert-msg {
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--ink-primary);
+  margin: 0;
+  word-break: break-word;
+}
+
+.error-alert-hint {
+  font-size: 10px;
+  line-height: 1.35;
+  color: var(--ink-muted);
+  margin-top: 1px;
+}
+
+.error-alert-dismiss {
+  background: transparent;
+  border: none;
+  color: var(--ink-muted);
+  cursor: pointer;
+  padding: 0 4px;
+  font-size: 16px;
+  line-height: 1;
+  border-radius: var(--radius-sm);
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.error-alert-dismiss:hover {
+  color: var(--ink-primary);
+  background-color: var(--bg-hover);
+}
+
+@keyframes rvu-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Main Content Area */
 .popup-main {
   padding: 16px;

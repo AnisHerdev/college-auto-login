@@ -32,6 +32,26 @@
 
     <!-- Main Content -->
     <main class="popup-main">
+      <!-- Error Alert Banner -->
+      <div id="errorAlert" class="error-alert hidden" role="alert">
+        <div class="error-alert-icon" aria-hidden="true">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+        </div>
+        <div class="error-alert-content">
+          <div class="error-alert-header">
+            <span class="error-alert-title">Last Login Failed</span>
+            <span id="errorAlertTime" class="error-alert-time">Just now</span>
+          </div>
+          <p id="errorAlertMessage" class="error-alert-msg"></p>
+          <span class="error-alert-hint">Update your credentials below or check your network.</span>
+        </div>
+        <button type="button" id="dismissErrorBtn" class="error-alert-dismiss" aria-label="Dismiss error notification">×</button>
+      </div>
+
       <form id="credentialsForm" class="credentials-form" autocomplete="on">
         <!-- USN / Username -->
         <div class="form-group">

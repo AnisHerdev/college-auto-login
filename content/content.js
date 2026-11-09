@@ -101,13 +101,75 @@
     return null;
   }
 
+  // Translate cryptic or raw portal error messages into clear, actionable guidance
+  function formatFriendlyError(rawError) {
+    if (!rawError) return 'Authentication rejected by gateway.';
+    const lower = rawError.toLowerCase();
+
+    if (
+      lower.includes('password') ||
+      lower.includes('credential') ||
+      lower.includes('username') ||
+      lower.includes('incorrect') ||
+      lower.includes('invalid') ||
+      lower.includes('not match')
+    ) {
+      return 'Incorrect USN or password. Click extension icon to update credentials.';
+    }
+    if (
+      lower.includes('maximum') ||
+      lower.includes('concurrent') ||
+      lower.includes('already logged in') ||
+      lower.includes('limit reached') ||
+      lower.includes('exceeded')
+    ) {
+      return 'Login limit reached: Account already active on another device.';
+    }
+    if (
+      lower.includes('disabled') ||
+      lower.includes('locked') ||
+      lower.includes('blocked') ||
+      lower.includes('expired')
+    ) {
+      return 'Account expired or temporarily blocked by RVU IT administration.';
+    }
+    if (
+      lower.includes('timeout') ||
+      lower.includes('time out') ||
+      lower.includes('unreachable') ||
+      lower.includes('network')
+    ) {
+      return 'Network timeout: Wi-Fi portal gateway is unresponsive.';
+    }
+
+    return `Portal error: ${rawError}`;
+  }
+
+  // Handle login error with multi-surface notifications so user is never left hanging
+  function handleLoginError(rawReason) {
+    const friendlyMessage = formatFriendlyError(rawReason);
+    updateBadge(friendlyMessage, 'error', 12000);
+
+    // Notify background service worker so toolbar badge and tooltip update immediately
+    chrome.runtime.sendMessage({
+      action: 'LOGIN_RESULT',
+      status: 'error',
+      message: friendlyMessage
+    }).catch(() => {});
+  }
+
   // Handle successful login completion
   function handleLoginSuccess() {
     updateBadge('Connected to RVU Wi-Fi ✓', 'success', autoCloseTab ? 2500 : 4000);
 
+    chrome.runtime.sendMessage({
+      action: 'LOGIN_RESULT',
+      status: 'success'
+    }).catch(() => {});
+
     if (autoCloseTab) {
       setTimeout(() => {
-        chrome.runtime.sendMessage({ action: 'CLOSE_TAB', delayMs: 500 });
+        chrome.runtime.sendMessage({ action: 'CLOSE_TAB', delayMs: 500 }).catch(() => {});
       }, 1500);
     }
   }
@@ -118,7 +180,7 @@
 
     // Check if credentials are present
     if (!usn || !password) {
-      updateBadge('Credentials missing. Click extension icon to configure.', 'error', 6000);
+      handleLoginError('Credentials missing. Click extension icon to configure.');
       return;
     }
 
@@ -207,10 +269,21 @@
 
   // Watch for state changes after submit
   function startStateWatcher() {
+    let resolved = false;
+
+    const cleanup = () => {
+      resolved = true;
+      if (observer) observer.disconnect();
+      if (pollingInterval) clearInterval(pollingInterval);
+      if (watchdogTimer) clearTimeout(watchdogTimer);
+    };
+
     const observer = new MutationObserver(() => {
+      if (resolved) return;
+
       // 1. Check for success
       if (isAlreadyLoggedIn()) {
-        observer.disconnect();
+        cleanup();
         handleLoginSuccess();
         return;
       }
@@ -218,8 +291,8 @@
       // 2. Check for login failure
       const error = getErrorMessage();
       if (error && hasAttemptedLogin) {
-        observer.disconnect();
-        updateBadge(`Login failed: ${error}`, 'error');
+        cleanup();
+        handleLoginError(error);
       }
     });
 
@@ -230,28 +303,30 @@
       attributeFilter: ['class', 'style']
     });
 
-    // Fallback polling for 12 seconds in case DOM mutations don't trigger observer
-    let elapsed = 0;
-    const interval = setInterval(() => {
-      elapsed += 500;
+    // Fallback polling in case DOM mutations don't trigger observer
+    const pollingInterval = setInterval(() => {
+      if (resolved) return;
+
       if (isAlreadyLoggedIn()) {
-        clearInterval(interval);
-        observer.disconnect();
+        cleanup();
         handleLoginSuccess();
       } else {
         const error = getErrorMessage();
         if (error && hasAttemptedLogin) {
-          clearInterval(interval);
-          observer.disconnect();
-          updateBadge(`Login failed: ${error}`, 'error');
+          cleanup();
+          handleLoginError(error);
         }
       }
+    }, 400);
 
-      if (elapsed >= 12000) {
-        clearInterval(interval);
-        observer.disconnect();
+    // 10-second watchdog: never leave the user hanging wondering why there is an error
+    const watchdogTimer = setTimeout(() => {
+      if (resolved) return;
+      if (!isAlreadyLoggedIn()) {
+        cleanup();
+        handleLoginError('Connection timed out after 10s. Portal gateway did not respond.');
       }
-    }, 500);
+    }, 10000);
   }
 
   // Wait for captive portal DOM elements to be ready
